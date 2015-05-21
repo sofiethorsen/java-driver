@@ -224,7 +224,7 @@ public class TableMetadata {
     /**
      * Returns the name of this table.
      *
-     * @return the name of this CQL table.
+/     * @return the name of this CQL table.
      */
     public String getName() {
         return name;
@@ -503,6 +503,11 @@ public class TableMetadata {
     static StringBuilder newLine(StringBuilder sb, boolean formatted) {
         if (formatted)
             sb.append('\n');
+        return sb;
+    }
+
+    static StringBuilder spaceOrNewLine(StringBuilder sb, boolean formatted) {
+        sb.append(formatted ? '\n' : ' ');
         return sb;
     }
 

@@ -4,6 +4,8 @@ CHANGELOG
 2.2.0-rc1:
 ----------
 
+- [new feature] Expose function and aggregate metadata (JAVA-747)
+
 Merged from 2.1 branch:
 
 - [improvement] Unify "Target" enum for schema elements (JAVA-782)
