@@ -16,9 +16,7 @@
 package com.datastax.driver.core;
 
 import java.nio.ByteBuffer;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
@@ -29,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.exceptions.DriverInternalError;
+import com.datastax.driver.core.exceptions.UnsupportedFeatureException;
 
 /**
  * A message from the CQL binary protocol.
@@ -48,6 +47,13 @@ abstract class Message {
 
     private volatile int streamId;
 
+    /**
+     * A generic key-value custom payload. Custom payloads are simply
+     * ignored by the default QueryHandler implementation server-side.
+     * @since Protocol V4
+     */
+    private volatile Map<String,byte[]> customPayload;
+
     protected Message() {}
 
     public Message setStreamId(int streamId) {
@@ -57,6 +63,15 @@ abstract class Message {
 
     public int getStreamId() {
         return streamId;
+    }
+
+    public Map<String,byte[]> getCustomPayload() {
+        return customPayload;
+    }
+
+    public Message setCustomPayload(Map<String,byte[]> customPayload) {
+        this.customPayload = customPayload;
+        return this;
     }
 
     public static abstract class Request extends Message {
@@ -198,16 +213,26 @@ abstract class Message {
         @Override
         protected void decode(ChannelHandlerContext ctx, Frame frame, List<Object> out) throws Exception {
             boolean isTracing = frame.header.flags.contains(Frame.Header.Flag.TRACING);
+            boolean isCustomPayload = frame.header.flags.contains(Frame.Header.Flag.CUSTOM_PAYLOAD);
             UUID tracingId = isTracing ? CBUtil.readUUID(frame.body) : null;
+            Map<String,byte[]> customPayload = isCustomPayload ? CBUtil.readBytesMap(frame.body) : null;
+
+            if(customPayload != null && logger.isTraceEnabled()) {
+                logger.trace("Received payload: {} ({} bytes total)", printPayload(customPayload), CBUtil.sizeOfBytesMap(customPayload));
+            }
 
             try {
                 Response response = Response.Type.fromOpcode(frame.header.opcode).decoder.decode(frame.body, frame.header.version);
-                response.setTracingId(tracingId).setStreamId(frame.header.streamId);
+                response
+                    .setTracingId(tracingId)
+                    .setCustomPayload(customPayload)
+                    .setStreamId(frame.header.streamId);
                 out.add(response);
             } finally {
                 frame.body.release();
             }
         }
+
     }
 
     @ChannelHandler.Sharable
@@ -224,13 +249,67 @@ abstract class Message {
             EnumSet<Frame.Header.Flag> flags = EnumSet.noneOf(Frame.Header.Flag.class);
             if (request.isTracingRequested())
                 flags.add(Frame.Header.Flag.TRACING);
+            Map<String,byte[]> payload = request.getCustomPayload();
+            if (payload != null) {
+                if (protocolVersion.compareTo(ProtocolVersion.V4) < 0)
+                    throw new UnsupportedFeatureException(
+                        protocolVersion,
+                        "Custom payloads are only supported since native protocol V4");
+                flags.add(Frame.Header.Flag.CUSTOM_PAYLOAD);
+            }
 
             @SuppressWarnings("unchecked")
             Coder<Request> coder = (Coder<Request>)request.type.coder;
-            ByteBuf body = ctx.alloc().buffer(coder.encodedSize(request, protocolVersion));
-            coder.encode(request, body, protocolVersion);
+            int messageSize = coder.encodedSize(request, protocolVersion);
+            Map<String, byte[]> customPayload = request.getCustomPayload() == null ? null : request.getCustomPayload();
+            int payloadLength = -1;
+            if (customPayload != null) {
+                payloadLength = CBUtil.sizeOfBytesMap(customPayload);
+                messageSize += payloadLength;
+            }
+            ByteBuf body = ctx.alloc().buffer(messageSize);
+            if (customPayload != null) {
+                CBUtil.writeBytesMap(customPayload, body);
+                if(logger.isTraceEnabled()) {
+                    logger.trace("Sending payload: {} ({} bytes total)", printPayload(customPayload), payloadLength);
+                }
+            }
 
+            coder.encode(request, body, protocolVersion);
             out.add(Frame.create(protocolVersion, request.type.opcode, request.getStreamId(), flags, body));
         }
+    }
+
+    // private stuff to debug custom payloads
+
+    private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
+
+    private static String printPayload(Map<String, byte[]> customPayload) {
+        if(customPayload == null) return "null";
+        if(customPayload.isEmpty()) return "{}";
+        StringBuilder sb = new StringBuilder("{");
+        Iterator<Map.Entry<String, byte[]>> iterator = customPayload.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, byte[]> entry = iterator.next();
+            sb.append(entry.getKey());
+            sb.append(":");
+            if(entry.getValue() == null) sb.append("null");
+            else bytesToHex(entry.getValue(), sb);
+            if(iterator.hasNext()) sb.append(", ");
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    public static void bytesToHex(byte[] bytes, StringBuilder sb) {
+        int length = Math.min(bytes.length, 50);
+        char[] hexChars = new char[length * 2];
+        sb.append("0x");
+        for ( int j = 0; j < length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            sb.append(hexArray[v >>> 4]);
+            sb.append(hexArray[v & 0x0F]);
+        }
+        if(bytes.length > 50) sb.append("... [TRUNCATED]");
     }
 }

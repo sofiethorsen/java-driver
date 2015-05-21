@@ -162,7 +162,8 @@ class Frame {
         {
             // The order of that enum matters!!
             COMPRESSED,
-            TRACING;
+            TRACING,
+            CUSTOM_PAYLOAD; // protocol V4 onwards
 
             public static EnumSet<Flag> deserialize(int flags) {
                 EnumSet<Flag> set = EnumSet.noneOf(Flag.class);

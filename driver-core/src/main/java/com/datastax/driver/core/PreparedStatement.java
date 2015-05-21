@@ -16,6 +16,7 @@
 package com.datastax.driver.core;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import com.datastax.driver.core.exceptions.InvalidTypeException;
 import com.datastax.driver.core.policies.RetryPolicy;
@@ -268,4 +269,16 @@ public interface PreparedStatement {
      * @return the PreparedId corresponding to this statement.
      */
     public PreparedId getPreparedId();
+
+    /**
+     * Return the custom payload that the server sent back with its response, if any,
+     * or {@code null}, if the server did not include any custom payload.
+     * <p>
+     * <strong>IMPORTANT:</strong> Custom payloads are available from protocol version 4 onwards.
+     * Under lower protocol versions, this method will always return {@code null}.
+     *
+     * @return the custom payload that the server sent back with its response, if any,
+     * or {@code null}, if the server did not include any custom payload
+     */
+    Map<String,byte[]> getCustomPayload();
 }

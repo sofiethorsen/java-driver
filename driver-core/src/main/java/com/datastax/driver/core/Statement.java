@@ -16,6 +16,7 @@
 package com.datastax.driver.core;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import com.datastax.driver.core.exceptions.PagingStateException;
 import com.datastax.driver.core.policies.RetryPolicy;
@@ -52,6 +53,7 @@ public abstract class Statement {
     private volatile RetryPolicy retryPolicy;
     private volatile ByteBuffer pagingState;
     protected volatile Boolean idempotent;
+    private volatile Map<String,byte[]> customPayload;
 
     // We don't want to expose the constructor, because the code relies on this being only sub-classed by RegularStatement, BoundStatement and BatchStatement
     Statement() {
@@ -444,5 +446,48 @@ public abstract class Statement {
             return myValue;
         else
             return queryOptions.getDefaultIdempotence();
+    }
+
+    /**
+     * Return the custom payload associated with this statement.
+     * Each time this statement is executed, its custom payload, if any,
+     * will be included in the query request.
+     * <p>
+     * Note that custom payload entries specified {@link CustomPayloadAwareSession at session level}
+     * when executing this statement will take precedence
+     * over entries specified by this statement's custom payload.
+     * <p>
+     * <strong>IMPORTANT:</strong> Custom payloads are available from protocol version 4 onwards.
+     * Trying to include custom payloads in requests sent by the driver
+     * under lower protocol versions will result in
+     * {@link com.datastax.driver.core.exceptions.DriverInternalError}s being thrown.
+
+     * @return this statement's custom payload, if any, or {@code null} if no custom payload is set
+     */
+    public Map<String,byte[]> getCustomPayload() {
+        return customPayload;
+    }
+
+    /**
+     * Set the custom payload associated with this statement.
+     * Each time this statement is executed, its custom payload, if any,
+     * will be included in the query request.
+     * <p>
+     * Note that custom payload entries specified {@link CustomPayloadAwareSession at session level}
+     * when executing this statement will take precedence
+     * over entries specified by this statement's custom payload.
+     * <p>
+     * <strong>IMPORTANT:</strong> Custom payloads are available from protocol version 4 onwards.
+     * Trying to include custom payloads in requests sent by the driver
+     * under lower protocol versions will result in
+     * {@link com.datastax.driver.core.exceptions.DriverInternalError}s being thrown.
+
+     * @param customPayload the custom payload to include with thsi statement,
+     *                      or {@code null} to clear any previously entered custom payload
+     * @return this {@link Statement} object.
+     */
+    public Statement setCustomPayload(Map<String,byte[]> customPayload) {
+        this.customPayload = customPayload;
+        return this;
     }
 }

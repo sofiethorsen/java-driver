@@ -271,13 +271,18 @@ public class CCMBridge {
     }
 
     public void bootstrapNodeWithPorts(int n, int thriftPort, int storagePort, int binaryPort, int jmxPort, int remoteDebugPort) {
+        bootstrapNodeWithPorts(n, thriftPort, storagePort, binaryPort, jmxPort, remoteDebugPort, null);
+    }
+
+    public void bootstrapNodeWithPorts(int n, int thriftPort, int storagePort, int binaryPort, int jmxPort, int remoteDebugPort, String option) {
         String thriftItf = IP_PREFIX + n + ":" + thriftPort;
         String storageItf = IP_PREFIX + n + ":" + storagePort;
         String binaryItf = IP_PREFIX + n + ":" + binaryPort;
         String remoteLogItf = IP_PREFIX + n + ":" + remoteDebugPort;
         execute("ccm add node%d -i %s%d -b -t %s -l %s --binary-itf %s -j %d -r %s -s",
             n, IP_PREFIX, n, thriftItf, storageItf, binaryItf, jmxPort, remoteLogItf);
-        execute("ccm node%d start --wait-other-notice --wait-for-binary-proto", n);
+        if(option == null) start(n);
+        else start(n, option);
     }
 
     public void decommissionNode(int n) {
@@ -459,6 +464,10 @@ public class CCMBridge {
         protected static Cluster cluster;
         protected static Session session;
 
+        protected String getJvmArgs(){
+            return null;
+        }
+
         protected abstract Collection<String> getTableDefinitions();
 
         // Give individual tests a chance to customize the cluster configuration
@@ -492,7 +501,7 @@ public class CCMBridge {
                         ports[i] = TestUtils.findAvailablePort(11000 + i);
                     }
 
-                    ccmBridge.bootstrapNodeWithPorts(1, ports[0], ports[1], ports[2], ports[3], ports[4]);
+                    ccmBridge.bootstrapNodeWithPorts(1, ports[0], ports[1], ports[2], ports[3], ports[4], getJvmArgs());
                     ksNumber = new AtomicLong(0);
                     erroredOut = false;
                     hostAddress = new InetSocketAddress(InetAddress.getByName(IP_PREFIX + 1), ports[2]);
