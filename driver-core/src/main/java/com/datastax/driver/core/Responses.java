@@ -99,6 +99,7 @@ class Responses {
                 case TRUNCATE_ERROR:   return new TruncateException(message);
                 case WRITE_TIMEOUT:    return ((WriteTimeoutException)infos).copy();
                 case READ_TIMEOUT:     return ((ReadTimeoutException)infos).copy();
+                case FUNCTION_FAILURE: return new FunctionExecutionException(message);
                 case SYNTAX_ERROR:     return new SyntaxError(message);
                 case UNAUTHORIZED:     return new UnauthorizedException(message);
                 case INVALID:          return new InvalidQueryException(message);

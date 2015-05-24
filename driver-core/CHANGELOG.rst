@@ -5,6 +5,7 @@ CHANGELOG
 ----------
 
 - [new feature] Expose function and aggregate metadata (JAVA-747)
+- [new feature] Add new client exception for CQL function failure (JAVA-778)
 
 Merged from 2.1 branch:
 
