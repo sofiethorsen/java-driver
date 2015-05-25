@@ -268,7 +268,7 @@ class Requests {
                         CBUtil.writeValue(pagingState, dest);
                     if (flags.contains(QueryFlag.SERIAL_CONSISTENCY))
                         CBUtil.writeConsistencyLevel(serialConsistency, dest);
-                    if (version == ProtocolVersion.V3 && flags.contains(QueryFlag.DEFAULT_TIMESTAMP))
+                    if (version.compareTo(ProtocolVersion.V3) >=0 && flags.contains(QueryFlag.DEFAULT_TIMESTAMP))
                         dest.writeLong(defaultTimestamp);
                     break;
                 default:
