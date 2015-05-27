@@ -99,3 +99,8 @@ To avoid this issue, you can use one the following workarounds:
   [Connection pooling](../pooling/))
 * [serial consistency on batch statements](http://docs.datastax.com/en/drivers/java/2.1/com/datastax/driver/core/BatchStatement.html#setSerialConsistencyLevel(com.datastax.driver.core.ConsistencyLevel))
 * [client-side timestamps](../query_timestamps/)
+
+#### v3 to v4
+
+* custom payloads (see
+  [Custom payloads](../custom_payloads/))

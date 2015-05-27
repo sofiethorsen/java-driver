@@ -4,6 +4,8 @@ CHANGELOG
 2.2.0-rc1:
 ----------
 
+- [new feature] Add k/v payload for 3rd party usage (JAVA-779)
+
 Merged from 2.1 branch:
 
 - [improvement] Unify "Target" enum for schema elements (JAVA-782)

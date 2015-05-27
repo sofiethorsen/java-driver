@@ -279,6 +279,7 @@ public interface PreparedStatement {
      *
      * @return the custom payload that the server sent back with its response, if any,
      * or {@code null}, if the server did not include any custom payload
+     * @since 2.2
      */
     Map<String,byte[]> getCustomPayload();
 }

@@ -453,16 +453,13 @@ public abstract class Statement {
      * Each time this statement is executed, its custom payload, if any,
      * will be included in the query request.
      * <p>
-     * Note that custom payload entries specified {@link CustomPayloadAwareSession at session level}
-     * when executing this statement will take precedence
-     * over entries specified by this statement's custom payload.
-     * <p>
      * <strong>IMPORTANT:</strong> Custom payloads are available from protocol version 4 onwards.
      * Trying to include custom payloads in requests sent by the driver
      * under lower protocol versions will result in
      * {@link com.datastax.driver.core.exceptions.DriverInternalError}s being thrown.
 
      * @return this statement's custom payload, if any, or {@code null} if no custom payload is set
+     * @since 2.2
      */
     public Map<String,byte[]> getCustomPayload() {
         return customPayload;
@@ -473,18 +470,15 @@ public abstract class Statement {
      * Each time this statement is executed, its custom payload, if any,
      * will be included in the query request.
      * <p>
-     * Note that custom payload entries specified {@link CustomPayloadAwareSession at session level}
-     * when executing this statement will take precedence
-     * over entries specified by this statement's custom payload.
-     * <p>
      * <strong>IMPORTANT:</strong> Custom payloads are available from protocol version 4 onwards.
      * Trying to include custom payloads in requests sent by the driver
-     * under lower protocol versions will result in
-     * {@link com.datastax.driver.core.exceptions.DriverInternalError}s being thrown.
-
+     * under lower protocol versions will result in an
+     * {@link com.datastax.driver.core.exceptions.UnsupportedFeatureException}
+     * (wrapped in a {@link com.datastax.driver.core.exceptions.NoHostAvailableException}).
      * @param customPayload the custom payload to include with thsi statement,
      *                      or {@code null} to clear any previously entered custom payload
      * @return this {@link Statement} object.
+     * @since 2.2
      */
     public Statement setCustomPayload(Map<String,byte[]> customPayload) {
         this.customPayload = customPayload;
